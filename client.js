@@ -4,6 +4,8 @@ const net = require("net")
 const host = process.argv[2] || 'localhost'
 const port = process.argv[3] || 9000
 
+
+
 const readline = require("readline").createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -15,7 +17,7 @@ const server = net.connect(port, host, () => {
     server.on('data', (data) => {
         readline.write(data.toString())
     })
-    InLine();
+    InLine(); 
 }).on('error', systemClose)
 
 function systemClose(error) {
