@@ -10,19 +10,18 @@ const readline = require("readline").createInterface({
 });
 
 const server = net.connect(port, host, () => {
-    console.log("CONNECTED !!!!");
+    readline.write(`\n Success connection in ${host}:${port} \n\n`)
 
     server.on('data', (data) => {
-        console.log(data.toString())
+        readline.write(data.toString())
     })
     InLine();
 }).on('error', systemClose)
 
 function systemClose(error) {
-    console.log(`\rERROR : ${error.message}`);
+    readline.write(`\rERROR : ${error.message}`);
     server.end();process.exit();
 }
-
 const InLine = () => {
     readline.addListener('line', (line) => {
         server.write(line)

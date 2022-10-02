@@ -1,49 +1,47 @@
 var net = require("net");
+const database = require('./database')
 
-const port = 9000;
-const host = 'localhost';
-let clients = [];
-
-
+const port = 9000 || process.env.PORT;
 
 
 const server = net.createServer();
 server.on('connection', (client) => {
-  connectedClient(client)
-  client.on('data', (data) => { 
-    broadcast(client, formatMessage(data.toString(), `from ${getPositionInClients(client)}`)) 
+  client = connectClient(client)
+
+  client.connection.on('data', data => {
+    broadcast(data.toString(), client.id)
   })
 
-  client.on('end', () => { desconnectedClient(client) })
-  client.on('error', (e) => {desconnectedClient(client)} )
+  client.connection.on('error' || 'close', () => {
+    desconnectClient(client)
+  })
 })
 
-function broadcast(origin, msg){
-  clients.filter(socket => socket !== origin).forEach(socket => socket.write(msg))
-}
-function formatMessage(msg, prefix = "SERVER") {
-  if (!msg) throw { message: "Msg undefined" }
-  return `${prefix.toUpperCase()} : ${String(msg).toLowerCase()}\r`
-}
-function getPositionInClients (client){
-  return clients.indexOf(client)
-}
-function connectedClient(client){
-  clients.push(client);
-  let messagem = formatMessage(`${getPositionInClients(client)} SE CONECTOU !!!`) 
-  console.log(messagem);
-  broadcast(client, messagem)
-}
-function desconnectedClient(client){
-  let messagem = formatMessage(`${getPositionInClients(client)} SE DESCONECTOU !!!`) 
-  console.log(messagem);
-  broadcast(client, messagem)
-  clients.splice(clients.indexOf(client), 1)
+function connectClient(newClient){
+  const client = database.insert(newClient)
+  broadcast(`${client.id} has connected !!!`, client.id, true)
+ return client
 }
 
+function desconnectClient(client){
+  database.remove(client)
+  broadcast(`${client.id} has desconnected !!!`, client.id, true)
+ return client
+}
 
-server.listen(port, host, () => {
-    console.log(formatMessage(`${host}:${port}`))
+function broadcast(data, from, isServerMessage) {
+  const clientsConnected = database.list()
+  const to = clientsConnected.filter(client => client.id !== from)
+  let message = `From ${from}: ${data}`
+  if (isServerMessage){
+    message = `==> Server : ${data}`
+    console.log(message)
+  }
+  to.length && to.forEach(client => client.connection.write(message))
+}
+
+server.listen(port , () => {
+    console.log(`==> Server running in ${port} port`)
 })
 
 
